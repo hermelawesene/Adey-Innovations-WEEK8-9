@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 def clean_data(df_creditcard, df_fraud, df_ipaddress):
     # Remove duplicates
@@ -104,8 +105,12 @@ def calculate_transaction_value_features(dataframe):
     return dataframe
 
 def encode_categorical_features(dataframe):
-    """One-hot encode categorical features."""
-    return pd.get_dummies(dataframe, columns=['device_id', 'source', 'browser'], drop_first=True)
+    """Frequency encode device_id and one-hot encode other features."""
+    device_id_freq = dataframe['device_id'].value_counts().to_dict()
+    dataframe['device_id'] = dataframe['device_id'].map(device_id_freq)
+    return pd.get_dummies(dataframe, columns=['source', 'browser'], drop_first=True)
+
+
 
 def encode_sex_and_age(dataframe):
     """Encode sex and normalize age."""
@@ -121,12 +126,43 @@ def drop_unnecessary_columns(dataframe):
 def feature_engineering(df):
     """Main function to perform feature engineering."""
     df = extract_time_based_features(df)
+    print("1")
     df = calculate_transaction_frequency(df)
+    print("2")
     df = calculate_transaction_value_features(df)
+    print("3")
     df = encode_categorical_features(df)
+    print("4")
     df = encode_sex_and_age(df)
+    print("5")
     df = drop_unnecessary_columns(df)
+    print("6")
     
     return df
 
 
+
+def normalize_fraud_data(df):
+    # Instantiate the scaler
+    scaler = MinMaxScaler()
+
+    # Select the columns that need normalization
+    columns_to_normalize = ['purchase_value', 'signup_duration_days', 'hour_of_purchase', 
+                            'day_of_week', 'transaction_count', 'average_purchase_value', 
+                            'total_purchase_value']
+
+    # Apply Min-Max scaling
+    df[columns_to_normalize] = scaler.fit_transform(df[columns_to_normalize])
+
+    # Display the scaled DataFrame
+    print(df.head())
+
+
+def normalize_creditcard_data(df):
+    # Instantiate the scaler
+    scaler = MinMaxScaler()
+
+    # Normalize 'Amount' and 'Time'
+    df[['Amount', 'Time']] = scaler.fit_transform(df[['Amount', 'Time']])
+
+    # No need to normalize 'Class' and 'V1' to 'V28'
